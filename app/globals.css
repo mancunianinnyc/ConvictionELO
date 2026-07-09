@@ -186,10 +186,13 @@ nav.bottom button.active { color: var(--teal2); }
 
 .note { font-size: 11px; color: var(--muted); text-align: center; margin-top: 26px; line-height: 1.5; }
 
-.site-footer { display: flex; align-items: center; justify-content: center; gap: 10px; flex-wrap: wrap; font-size: 10.5px; font-weight: 500; color: #aeacbd; line-height: 1.6; margin: 40px auto 4px; padding-top: 18px; border-top: 1px solid var(--line); max-width: 520px; }
-.gh-btn { display: inline-grid; place-items: center; width: 28px; height: 28px; border-radius: 8px; color: #aeacbd; transition: .15s; }
-.gh-btn svg { width: 17px; height: 17px; fill: currentColor; }
-.gh-btn:hover { color: var(--ink); background: var(--soft); }
+.site-footer { display: flex; flex-direction: column; align-items: center; gap: 10px; text-align: center; font-size: 10.5px; font-weight: 500; color: #aeacbd; line-height: 1.6; margin: 40px auto 4px; padding-top: 18px; border-top: 1px solid var(--line); max-width: 540px; }
+.footer-legal { font-size: 10.5px; color: #b6b4c4; line-height: 1.65; max-width: 460px; }
+.footer-meta { display: flex; align-items: center; justify-content: center; gap: 8px; flex-wrap: wrap; font-size: 11px; }
+.footer-dot { color: var(--line); }
+.gh-link { display: inline-flex; align-items: center; gap: 5px; color: var(--teal2); font-weight: 700; text-decoration: none; transition: .15s; }
+.gh-link svg { width: 14px; height: 14px; fill: currentColor; }
+.gh-link:hover { color: var(--teal); text-decoration: underline; text-underline-offset: 2px; }
 
 /* Restack the vote arena into compact, thumb-friendly horizontal cards on
    phones — both companies stay visible, with big tap targets. */

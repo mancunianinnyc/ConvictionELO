@@ -7,7 +7,7 @@ import { loadCompanies } from "@/lib/loadCompanies";
 import { CATEGORIES, REGIONS } from "@/lib/companies.data";
 import { useSession } from "@/lib/auth";
 import { loadProfile, saveStreak } from "@/lib/profile";
-import { castVote } from "@/lib/castVote";
+import { castVote, votesTodayCount } from "@/lib/castVote";
 import { submitCompany } from "@/lib/submitCompany";
 import { flagUnknown } from "@/lib/unknowns";
 import {
@@ -90,6 +90,9 @@ export default function App() {
   // First-run explainer overlay — opened on a visitor's first ever load (see the
   // ONBOARD_KEY effect) and dismissed for good once they've seen it.
   const [showOnboard, setShowOnboard] = useState(false);
+  // The "you've used today's 3 picks" popup — shown when a finished user lands
+  // back on the Vote tab (the vote area itself is also locked when doneToday).
+  const [showLimitModal, setShowLimitModal] = useState(false);
   // The leaderboard is gated behind completing today's 3 picks. Persisted via
   // the profile's last_active_date, so it stays unlocked on refresh for the day.
   const [doneToday, setDoneToday] = useState(false);
@@ -138,14 +141,27 @@ export default function App() {
     loadProfile(userId).then((p) => {
       if (cancelled) return;
       setStreak(p.streak);
-      // Already did today's 3 picks? Keep the tables unlocked for the day.
-      const today = new Date().toISOString().slice(0, 10);
-      if ((p.lastActive ?? "").slice(0, 10) === today) setDoneToday(true);
+    });
+    // Resume today's progress from the server so a reload can't reset the daily
+    // count. How many of today's 3 picks are already cast decides where we pick
+    // up (and whether the day is already done). This is what actually enforces
+    // the 3-per-calendar-day limit in the UI; the DB enforces it authoritatively.
+    votesTodayCount(userId).then((n) => {
+      if (cancelled) return;
+      setPickIndex(n);
+      if (n >= 3) setDoneToday(true); // out of picks — unlock tables, lock voting
     });
     return () => {
       cancelled = true;
     };
   }, [userId]);
+
+  // When a finished user is on the Vote tab (a reload, or tapping Vote again
+  // after completing the day), surface the daily-limit popup. Never fires the
+  // moment they finish their 3rd pick, since that routes to the "done" view.
+  useEffect(() => {
+    if (doneToday && view === "vote") setShowLimitModal(true);
+  }, [doneToday, view]);
 
   const tier = tierFor(streak);
   const voteQ = QORDER[Math.min(pickIndex, 2)];
@@ -236,7 +252,16 @@ export default function App() {
       void castVote({ companyA: a, companyB: b, dimension: qk, winner: winnerId }).then(
         (outcome) => {
           if (!outcome.ok) {
-            if (!outcome.alreadyVoted) console.error("cast_vote failed:", outcome.error);
+            // The server rejected the pick. If it's the daily limit (e.g. a
+            // second tab, or state that drifted from the server), lock voting
+            // and tell the user rather than silently pretending it counted; the
+            // optimistic Elo self-heals on the next reload from the DB.
+            if (outcome.alreadyVoted) {
+              setDoneToday(true);
+              setShowLimitModal(true);
+            } else {
+              console.error("cast_vote failed:", outcome.error);
+            }
             return;
           }
           const { winner: wId, loser: lId, winnerElo, loserElo } = outcome.result;
@@ -671,8 +696,23 @@ export default function App() {
         )}
       </div>
 
-      {/* VOTE */}
-      {view === "vote" && (
+      {/* VOTE — locked once today's 3 picks are used (see doneToday). The
+          matchup is only rendered when there are picks left, so a finished user
+          structurally cannot cast a 4th; the popup explains why. */}
+      {view === "vote" && doneToday && (
+        <section className="done-card">
+          <div className="big">✅</div>
+          <h2>That&apos;s your 3 for today</h2>
+          <p>
+            You&apos;ve used today&apos;s picks — one per dimension. Come back tomorrow for three fresh
+            matchups and to keep your streak alive.
+          </p>
+          <button className="nextbtn" onClick={() => setView("board")} style={{ marginTop: 10 }}>
+            🏆 See the leaderboard →
+          </button>
+        </section>
+      )}
+      {view === "vote" && !doneToday && (
         <section>
           <div className="qbar">
             <div className="k">
@@ -716,7 +756,7 @@ export default function App() {
           <p className="note">
             {anonDisabled
               ? "⚠ Anonymous sign-ins are disabled in Supabase — votes aren’t being recorded yet. Enable them in Authentication → Sign In / Providers."
-              : "Votes are recorded to your pseudonymous profile · 255 startups and counting"}
+              : `Votes are recorded to your pseudonymous profile · ${companies.length} startups and counting`}
           </p>
         </section>
       )}
@@ -1172,6 +1212,40 @@ export default function App() {
           </div>
         </div>
       )}
+      {/* DAILY-LIMIT POPUP — the "you can't answer more than 3 a day" notice.
+          The vote area is already locked when doneToday; this explains it. */}
+      {showLimitModal && (
+        <div
+          className="onboard-backdrop"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="limit-title"
+          onClick={() => setShowLimitModal(false)}
+        >
+          <div className="onboard-card" onClick={(e) => e.stopPropagation()}>
+            <div className="onboard-eyebrow">Daily limit</div>
+            <h2 id="limit-title" className="onboard-title">
+              That&apos;s your <span>3 for today</span>
+            </h2>
+            <p className="onboard-sub">
+              Three picks a day, one per dimension — that&apos;s the whole point of the streak. Fresh
+              matchups unlock tomorrow.
+            </p>
+            <button
+              className="nextbtn onboard-cta"
+              onClick={() => {
+                setShowLimitModal(false);
+                setView("board");
+              }}
+            >
+              See today&apos;s leaderboard →
+            </button>
+            <button className="linklike" style={{ display: "block", margin: "12px auto 0" }} onClick={() => setShowLimitModal(false)}>
+              Maybe later
+            </button>
+          </div>
+        </div>
+      )}
       {peekId !== null && byId.get(peekId) && (
         <div
           className="peek-backdrop"
@@ -1196,19 +1270,28 @@ export default function App() {
       )}
 
       <footer className="site-footer">
-        <span>Made for fun by Ross Garlick</span>
-        <a
-          className="gh-btn"
-          href="https://github.com/mancunianinnyc/ConvictionELO"
-          target="_blank"
-          rel="noreferrer"
-          aria-label="Contribute to the project on GitHub"
-          title="Contribute on GitHub"
-        >
-          <svg viewBox="0 0 16 16" aria-hidden="true">
-            <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0 0 16 8c0-4.42-3.58-8-8-8z" />
-          </svg>
-        </a>
+        <p className="footer-legal">
+          Company details are compiled from public sources and may be incomplete, inaccurate, or out
+          of date; they&apos;re revised over time as better information surfaces. Ratings reflect the
+          crowd&apos;s opinion, not fact, financial advice, or any endorsement.
+        </p>
+        <div className="footer-meta">
+          <span>Made for fun by Ross Garlick</span>
+          <span className="footer-dot" aria-hidden="true">
+            ·
+          </span>
+          <a
+            className="gh-link"
+            href="https://github.com/mancunianinnyc/ConvictionELO"
+            target="_blank"
+            rel="noreferrer"
+          >
+            <svg viewBox="0 0 16 16" aria-hidden="true">
+              <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0 0 16 8c0-4.42-3.58-8-8-8z" />
+            </svg>
+            Contribute to ConvictionELO
+          </a>
+        </div>
       </footer>
 
       <nav className="bottom">
