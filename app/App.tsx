@@ -706,7 +706,7 @@ export default function App() {
   return (
     <div className={"shell" + (railsOn ? " shell-rails" : "")}>
       {railsOn && (
-        <aside className="rail rail-left" aria-label="Your day">
+        <aside className="shell-sidebar" aria-label="Your day and discovery">
           <div className="rail-card">
             <div className="rail-h">Your day</div>
             <div className="rail-streak">🔥 {streak} day streak</div>
@@ -723,6 +723,40 @@ export default function App() {
             </div>
             <button className="rail-link" onClick={() => setShowOnboard(true)}>
               ⓘ How it works
+            </button>
+          </div>
+          <div className="rail-card">
+            <div className="rail-h">Discover</div>
+            <div className="rail-stats">
+              <div>
+                <b>{companies.length}</b>
+                <span>startups</span>
+              </div>
+              <div>
+                <b>{CATEGORIES.length}</b>
+                <span>categories</span>
+              </div>
+              <div>
+                <b>{REGIONS.length}</b>
+                <span>regions</span>
+              </div>
+            </div>
+            <div className="rail-sub">Just added</div>
+            <div className="rail-recent">
+              {recentlyAdded.map((c) => (
+                <button key={c.id} className="rail-co" onClick={() => setPeekId(c.id)}>
+                  <Logo c={c} cls="rail-logo" />
+                  <span className="rail-co-txt">
+                    <b>{c.name}</b>
+                    <small>
+                      {c.category} · {c.region}
+                    </small>
+                  </span>
+                </button>
+              ))}
+            </div>
+            <button className="rail-cta" onClick={() => setView("submit")}>
+              ➕ Submit a startup
             </button>
           </div>
         </aside>
@@ -1416,44 +1450,6 @@ export default function App() {
         </button>
       </nav>
       </div>
-      {railsOn && (
-        <aside className="rail rail-right" aria-label="Discover startups">
-          <div className="rail-card">
-            <div className="rail-h">Discover</div>
-            <div className="rail-stats">
-              <div>
-                <b>{companies.length}</b>
-                <span>startups</span>
-              </div>
-              <div>
-                <b>{CATEGORIES.length}</b>
-                <span>categories</span>
-              </div>
-              <div>
-                <b>{REGIONS.length}</b>
-                <span>regions</span>
-              </div>
-            </div>
-            <div className="rail-sub">Just added</div>
-            <div className="rail-recent">
-              {recentlyAdded.map((c) => (
-                <button key={c.id} className="rail-co" onClick={() => setPeekId(c.id)}>
-                  <Logo c={c} cls="rail-logo" />
-                  <span className="rail-co-txt">
-                    <b>{c.name}</b>
-                    <small>
-                      {c.category} · {c.region}
-                    </small>
-                  </span>
-                </button>
-              ))}
-            </div>
-            <button className="rail-cta" onClick={() => setView("submit")}>
-              ➕ Submit a startup
-            </button>
-          </div>
-        </aside>
-      )}
     </div>
   );
 }

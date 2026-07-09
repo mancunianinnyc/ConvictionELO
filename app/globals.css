@@ -29,17 +29,17 @@ body {
    two contextual rails flank it (vote/done views only). Mobile is unchanged —
    .shell is a plain block and .wrap keeps its own centering. */
 .shell { display: block; }
-.rail { display: none; }
+.shell-sidebar { display: none; }
 .wrap-wide { max-width: 760px; }
 @media (min-width: 1000px) {
   .wrap-wide { max-width: 1080px; } /* Tables use the extra width */
 }
-@media (min-width: 1200px) {
-  .shell-rails { display: grid; grid-template-columns: minmax(210px, 258px) minmax(0, 760px) minmax(210px, 258px); gap: clamp(16px, 2vw, 30px); justify-content: center; align-items: start; max-width: 1400px; margin: 0 auto; }
-  .shell-rails .wrap { margin: 0; }
-  .rail { display: block; position: sticky; top: 22px; }
-  .rail-left { justify-self: end; }
-  .rail-right { justify-self: start; }
+/* A single left sidebar (Your day + Discover stacked) with the app as the clear
+   primary on the right — one cohesive shell rather than two flanking rails. */
+@media (min-width: 1100px) {
+  .shell-rails { display: grid; grid-template-columns: minmax(250px, 300px) minmax(0, 1fr); gap: 32px; justify-content: center; align-items: start; max-width: 1280px; margin: 0 auto; }
+  .shell-rails .wrap { margin: 0; max-width: none; } /* fill the 2/3 main column */
+  .shell-sidebar { display: flex; flex-direction: column; gap: 16px; position: sticky; top: 22px; }
 }
 .rail-card { background: var(--card); border: 1px solid var(--line); border-radius: 18px; box-shadow: var(--shadow-sm); padding: 18px; }
 .rail-h { font-family: "Fraunces", Georgia, serif; font-weight: 600; font-size: 18px; margin-bottom: 12px; }
