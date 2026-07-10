@@ -42,7 +42,13 @@ gating the first release.
 ## ⏳ Later — growth, virality & scale (on the roadmap, not the MVP)
 - **Share cards + dynamic Open Graph images** — a branded, spoiler-friendly "I called X over Y" card per result, each with a canonical public URL. The primary growth loop — turned on once the core is validated with real players.
 - **Public, crawlable pages** — per-company profile routes (`/c/[slug]`) and a public leaderboard for SEO and shareable links; also the surface the share cards and badge point at.
-- **Embeddable "Ranked on ConvictionELO" badge** — companies embed their rank on their own sites (à la G2 / Product Hunt), turning the subjects of the ranking into its distributors.
+- **Embeddable "Ranked on Coliseo" badge** — companies embed their rank on their own sites (à la G2 / Product Hunt), turning the subjects of the ranking into its distributors.
+- **A "Discover" home for curiosity (desktop-first)** — today the app is built around the *game* (Vote) and the *rankings* (Tables); once you've spent your 3 daily picks you're effectively done for the day. But discovery is the actual value, so give it its own surface: a **Discover** tab where anyone — especially someone who's *already voted today* — can keep exploring startups in an engaging way, leaning into the desktop's extra screen real estate (the sidebar "Discover" panel is the seed of this). Deliberately pinned for now — captured so it's not lost; not gating the MVP.
+  - **Keep-playing "exhibition" mode** — reuse the matchup UI for *unlimited, non-scoring* rounds that don't touch the Elo or the daily limit, deliberately pairing companies to maximise discovery (ones you don't know, cross-category surprises), with the "learn more" dossier one tap away. The daily 3 stay scarce and meaningful; this is play-for-curiosity.
+  - **Curated collections / themes** — browsable sets ("LatAm rising," "hidden gems," "the AI-coding wars," YC cohorts, "founded 2024") as editorial entry points into the database.
+  - **An "Underrated" leaderboard (discovery lift)** — rank companies by how much the crowd backs them *after* actually learning about them, vs. their name recognition. A ranking only a discovery product can produce; feeds off the "I don't know this" signal + a "backed-after-learning" capture (the deferred discovery-lift data model).
+  - **Watchlist / "add to radar"** — bookmark companies you discover into a personal list — a reason to return, and the seed for future notifications.
+  - **Desktop-first layout** — a multi-column browse experience (collections + a live discovery feed + a daily company spotlight) a phone can't show; mobile gets the leaner exhibition-feed version.
 - **Confidence-aware ratings (Glicko-2 / rating deviation)** — graduate from raw Elo so new and inactive companies are handled well and noise is damped at scale (the move chess.com and Lichess both made).
 - **Anti-manipulation hardening** — cohort/split analysis over the append-only votes log to detect and discount brigading; per-IP rate limits and stronger uniqueness guarantees. (Needed before any high-traffic public push.)
 - **Weekly "movers" + season resets** — recurring, shareable content.
@@ -60,7 +66,7 @@ gating the first release.
 
 ## 💭 Exploring
 - **Sustainability / business model** — keep the daily game and the code free and open, and monetize the *data layer*: paid access to analytics, historical ranking movements, and a database/API of the ecosystem (open-core, à la PostHog / Supabase — see the note below). The trusted, durable, comparable rankings are the asset.
-- **Public read API** — let third parties build on the data (newsletters, bots, "ConvictionELO for [vertical]"); the free tier of the data layer above.
+- **Public read API** — let third parties build on the data (newsletters, bots, "Coliseo for [vertical]"); the free tier of the data layer above.
 - **New verticals** — the same "Elo over time for dispersed actors who compete only indirectly" applied to **VCs**, funds, agencies, or other industries. See [About](https://github.com/mancunianinnyc/coliseo/wiki/About).
 - **Latin America focus** — a credible, open database of the LatAm startup ecosystem, which barely exists today.
 - **Prediction-market layer** — the betting adjacency is real, but the regulatory surface is heavy; strictly a phase-3+ consideration, and only once the ranking itself is trusted.
