@@ -231,6 +231,17 @@ export default function App() {
     if (doneToday && view === "vote") setShowLimitModal(true);
   }, [doneToday, view]);
 
+  // Picking a winner reveals the "Lock it in" button below the tall vote cards —
+  // scroll it into view so the bottom nav can never hide it on a small screen.
+  const isDecided = decided !== null;
+  useEffect(() => {
+    if (isDecided && view === "vote") {
+      requestAnimationFrame(() =>
+        document.querySelector(".nextbtn")?.scrollIntoView({ behavior: "smooth", block: "center" }),
+      );
+    }
+  }, [isDecided, view]);
+
   const tier = tierFor(streak);
   // One question per day, rotating by UTC calendar day so everyone gets the same
   // question on the same day. It stays fixed across all 3 of the day's rounds.
@@ -1631,33 +1642,35 @@ export default function App() {
         </linearGradient>
       </svg>
       <nav className="bottom">
-        <button
-          className={view === "vote" || view === "done" ? "active" : ""}
-          onClick={() => setView("vote")}
-        >
-          <span className="ic">
-            <NavIcon name="vote" />
-          </span>
-          Vote
-        </button>
-        <button
-          className={view === "board" || view === "profile" ? "active" : ""}
-          onClick={() => setView("board")}
-        >
-          <span className="ic">
-            <NavIcon name={doneToday ? "tables" : "locked"} />
-          </span>
-          Tables
-        </button>
-        <button
-          className={view === "submit" ? "active" : ""}
-          onClick={() => setView("submit")}
-        >
-          <span className="ic">
-            <NavIcon name="submit" />
-          </span>
-          Submit
-        </button>
+        <div className="nav-inner">
+          <button
+            className={view === "vote" || view === "done" ? "active" : ""}
+            onClick={() => setView("vote")}
+          >
+            <span className="ic">
+              <NavIcon name="vote" />
+            </span>
+            Vote
+          </button>
+          <button
+            className={view === "board" || view === "profile" ? "active" : ""}
+            onClick={() => setView("board")}
+          >
+            <span className="ic">
+              <NavIcon name={doneToday ? "tables" : "locked"} />
+            </span>
+            Tables
+          </button>
+          <button
+            className={view === "submit" ? "active" : ""}
+            onClick={() => setView("submit")}
+          >
+            <span className="ic">
+              <NavIcon name="submit" />
+            </span>
+            Submit
+          </button>
+        </div>
       </nav>
       </div>
     </div>
