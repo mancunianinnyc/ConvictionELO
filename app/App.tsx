@@ -298,7 +298,8 @@ export default function App() {
       setDoneToday(true); // today's picks are in — unlock the tables
       setView("done");
     } else {
-      newMatch(next, nextIndex);
+      // Same two companies all day — advance only the question, keep the pair.
+      setDecided(null);
     }
   }
 
@@ -675,7 +676,7 @@ export default function App() {
                 {delta}
               </div>
             </>
-          ) : (
+          ) : pickIndex === 0 ? (
             <button
               type="button"
               className="dunno-tag"
@@ -688,7 +689,7 @@ export default function App() {
             >
               🤷 <span>not familiar</span>
             </button>
-          )}
+          ) : null}
         </div>
       </div>
     );
@@ -836,9 +837,9 @@ export default function App() {
             </div>
             <Fighter c={B} side="B" />
           </div>
-          {!decided && (
+          {!decided && pickIndex === 0 && (
             <button className="skip" onClick={() => newMatch()}>
-              🤔 Too close to call — skip
+              🤷 Don&apos;t know these — show a different pair
             </button>
           )}
           {decided && (
