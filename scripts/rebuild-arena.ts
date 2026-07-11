@@ -59,32 +59,27 @@ async function main() {
       .sort((a, b) => b.notab - a.notab || a.name.localeCompare(b.name));
 
     const arena = new Set(scored.slice(0, SIZE).map((c) => c.id));
-    // Re-derive prominence within the arena by rank, so warm-up/matchmaking has a
-    // gradient instead of everything sitting at 2. Non-arena prominence is left
-    // untouched (those companies aren't loaded by the app anyway).
-    const promForRank = (rank: number): number | null =>
-      rank < 40 ? 5 : rank < 120 ? 4 : rank < 300 ? 3 : 2;
-
-    const ids: number[] = [], notabs: number[] = [], arenaFlags: boolean[] = [], proms: (number | null)[] = [];
-    scored.forEach((c, rank) => {
+    // Set notability + arena membership only. IMPORTANT: prominence is a STABLE,
+    // source-assigned signal (the notability score is built from it) and must NOT
+    // be mutated here — re-deriving it from arena rank creates a feedback loop that
+    // churns and degrades the tail on every rebuild. Warm-up already has a gradient
+    // from the source prominences (seed 1–5, unicorn 3, YC 2/top-4).
+    const ids: number[] = [], notabs: number[] = [], arenaFlags: boolean[] = [];
+    scored.forEach((c) => {
       ids.push(c.id);
       notabs.push(c.notab);
-      const inArena = arena.has(c.id);
-      arenaFlags.push(inArena);
-      proms.push(inArena ? promForRank(rank) : null);
+      arenaFlags.push(arena.has(c.id));
     });
 
     await client.query("begin");
     await client.query("update companies set arena_eligible = false where arena_eligible");
     await client.query(
       `update companies c
-          set notability = t.notab,
-              arena_eligible = t.arena,
-              prominence = coalesce(t.prom, c.prominence)
+          set notability = t.notab, arena_eligible = t.arena
          from (select unnest($1::int[]) as id, unnest($2::int[]) as notab,
-                      unnest($3::boolean[]) as arena, unnest($4::int[]) as prom) t
+                      unnest($3::boolean[]) as arena) t
         where c.id = t.id`,
-      [ids, notabs, arenaFlags, proms],
+      [ids, notabs, arenaFlags],
     );
     await client.query("commit");
 

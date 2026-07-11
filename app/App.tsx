@@ -1374,7 +1374,8 @@ export default function App() {
                 <b>Private</b> — not publicly traded.
               </li>
               <li>
-                <b>Venture-backed</b> — has raised at least a Seed round.
+                <b>Venture-backed startup</b> — raised institutional venture funding; not a
+                bootstrapped or family-owned private giant (e.g. Cargill).
               </li>
               <li>
                 <b>Alive &amp; independent</b> — operating, not shut down or acquired.

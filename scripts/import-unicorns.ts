@@ -82,8 +82,15 @@ async function main() {
   for (let i = 0; i < titles.length; i += 120) {
     const chunk = titles.slice(i, i + 120);
     const values = chunk.map((t) => `<https://en.wikipedia.org/wiki/${encodeURIComponent(t.replace(/ /g, "_")).replace(/%2F/g, "/")}>`).join(" ");
+    // Arena500 eligibility, enforced at the source: private (not on any stock
+    // exchange, P414), alive (no dissolution date, P576), and an actual company
+    // (not a human Q5 or a country Q6256). This keeps public/exited/dead companies
+    // and bad parses out — the Wikipedia unicorn list is historical and includes
+    // plenty of since-IPO'd / since-dead companies.
     const q = `SELECT ?article ?website ?countryLabel ?industryLabel ?inception ?employees ?cDescription WHERE {
       VALUES ?article { ${values} } ?article schema:about ?c .
+      MINUS { ?c wdt:P414 [] } MINUS { ?c wdt:P576 [] }
+      MINUS { ?c wdt:P31 wd:Q5 } MINUS { ?c wdt:P31 wd:Q6256 }
       OPTIONAL { ?c wdt:P856 ?website } OPTIONAL { ?c wdt:P17 ?country }
       OPTIONAL { ?c wdt:P452 ?industry } OPTIONAL { ?c wdt:P571 ?inception } OPTIONAL { ?c wdt:P1128 ?employees }
       SERVICE wikibase:label { bd:serviceParam wikibase:language "en" } }`;
@@ -107,15 +114,25 @@ async function main() {
   const client = new Client({ connectionString: conn, ssl: { rejectUnauthorized: false } });
   await client.connect();
   try {
-    const { rows: existing } = await client.query<{ website: string }>("select website from companies");
+    // Dedupe against the WHOLE DB by domain AND name (any lifecycle) — this catches
+    // companies that are already present as graduated/public (e.g. Duolingo,
+    // Freshworks) even when Wikidata's stock-exchange data is missing, so a public
+    // company can't sneak back in as an "active" unicorn.
+    const { rows: existing } = await client.query<{ website: string; name: string }>("select website, name from companies");
     const have = new Set(existing.map((r) => bareDomain(r.website)));
+    const haveName = new Set(existing.map((r) => r.name.toLowerCase()));
     const domSeen = new Set<string>();
     const rows = titles.map((t) => ({ name: cleanName(t), ...(wd.get(t.toLowerCase()) ?? {}) }))
       .filter((u: any) => {
         const d = bareDomain(u.website || "");
         if (!/^[a-z0-9.-]+\.[a-z]{2,}$/.test(d)) return false;
         if (isGov(d) || isMedia(d) || COUNTRIES.has(u.name.toLowerCase())) return false;
-        if (have.has(d) || domSeen.has(d)) return false;
+        // Startup-era floor: a "unicorn" founded before 2005 is almost always a
+        // long-since-exited company (LinkedIn, MySQL, Skyscanner…) that Wikidata's
+        // exit data missed, or an old non-startup. Unknown founding years are kept
+        // (most are genuinely recent unicorns Wikidata just lacks an inception for).
+        if (u.inception && u.inception < 2005) return false;
+        if (have.has(d) || domSeen.has(d) || haveName.has(u.name.toLowerCase())) return false;
         domSeen.add(d);
         return true;
       });
